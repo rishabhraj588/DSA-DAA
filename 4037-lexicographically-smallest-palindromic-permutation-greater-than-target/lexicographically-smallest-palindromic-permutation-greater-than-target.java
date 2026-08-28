@@ -1,144 +1,123 @@
-import java.util.*;
-
 class Solution {
-
     public String lexPalindromicPermutation(String s, String target) {
+        int[] a = new int[26];
+        for (char ch : s.toCharArray()){
+            a[ch - 'a']++;
+        }
+        char mid = '.';
+        for (int i = 0; i < 26; i++){
+            if ((a[i]&1) == 1){
+                if (mid != '.')return "";
+                mid = (char) (i + (int)'a');
+            }
+            a[i] /= 2;
+        }
+        StringBuilder str = new StringBuilder();
+        int flag = 0;
+        for (int i = 0; i < s.length() / 2; i++){
+            char ch = target.charAt(i);
+            if (flag == 0){
+                boolean ok  = false;
+                if (a[ch - 'a'] > 0){
+                    a[ch - 'a']--;
+                    str.append(ch);
+                    continue;
+                }
+                for (int j = ch - 'a'; j < 26; j++){
+                    if (a[j] > 0){
+                        a[j]--;
+                        ok =true;
+                        str.append((char) (j + 'a'));
+                        break;
+                    }
+                }
+                if (ok){
+                    flag = 1;
+                    continue;
+                }
+                for (int j = i - 1; j >= 0 && !ok; j--){
+                    for (int k = 0; k < 26; k++){
+    
+                        if (k > str.charAt(j) - 'a' && a[k] > 0){
+                            a[str.charAt(j) - 'a']++;
+                            str.setCharAt(j, (char) (k + 'a'));
+                            a[k]--;
+                            ok = true;
+                            break;
+                        }
+                    }
+                    if (ok){
+                        i = j;
+                        flag = 1;
+                        // System.out.printf("%d ", i);
+                        break;
+                    }
+                    a[str.charAt(j) - 'a']++;
+                    str.deleteCharAt(str.length() - 1);
+                }
+                if (!ok)return "";
 
+            }
+            else {
+                for (int j = 0; j < 26; j++){
+                    if (a[j] > 0){
+                        a[j]--;
+                        str.append((char) (j + 'a'));
+                        break;
+                    }
+                }
+            }
+            
+        }
+        StringBuilder con = palind(str, mid);
+        if (comp(con, new StringBuilder(target)) == 1)return con.toString();
+        next_perm(str);
+        con = palind(str, mid);
+        if (comp(con, new StringBuilder(target)) == 1)return con.toString();
+        
+        return "";
+
+    }
+    int comp(StringBuilder s1, StringBuilder s2){
+        for (int i = 0; i < s1.length(); i++){
+            if (s1.charAt(i) == s2.charAt(i))continue;
+            return s1.charAt(i) < s2.charAt(i) ? -1 : 1;
+        }
+        return 0;
+    }
+    StringBuilder palind(StringBuilder s, char mid){
+        StringBuilder con = new StringBuilder();
+        con.append(s);
+        if (mid != '.') con.append(mid);
+        s.reverse();
+        con.append(s);
+        s.reverse();
+        return con;
+    }
+    void swap(StringBuilder s, int i, int j){
+        s.setCharAt(i, (char) (s.charAt(i) ^ s.charAt(j)));
+        s.setCharAt(j, (char) (s.charAt(i) ^ s.charAt(j)));
+        s.setCharAt(i, (char) (s.charAt(i) ^ s.charAt(j)));
+    }
+    void next_perm(StringBuilder s){
         int n = s.length();
-
-        // Count frequency of every character
-        int[] freq = new int[26];
-
-        for (char ch : s.toCharArray()) {
-            freq[ch - 'a']++;
-        }
-
-        // Check if palindrome is possible
-        int odd = 0;
-        int middle = -1;
-
-        for (int i = 0; i < 26; i++) {
-            if (freq[i] % 2 == 1) {
-                odd++;
-                middle = i;
+        int pos = -1;
+        for (int i = n -2; i >= 0; i--){
+            if (s.charAt(i) < s.charAt(i + 1)){
+                pos = i;
+                break;
             }
         }
-
-        // More than one odd frequency => impossible
-        if (odd > 1) {
-            return "";
-        }
-
-        // Frequency of characters in left half
-        int[] cnt = new int[26];
-
-        for (int i = 0; i < 26; i++) {
-            cnt[i] = freq[i] / 2;
-        }
-
-        int halfLen = n / 2;
-
-        char[] left = new char[halfLen];
-
-        // Construct smallest valid palindrome
-        if (!solve(left, 0, cnt, target, middle, n)) {
-            return "";
-        }
-
-        return buildPalindrome(left, middle, n);
-    }
-
-    private boolean solve(
-            char[] left,
-            int pos,
-            int[] cnt,
-            String target,
-            int middle,
-            int n) {
-
-        // All positions filled
-        if (pos == left.length) {
-
-            String candidate =
-                    buildPalindrome(left, middle, n);
-
-            return candidate.compareTo(target) > 0;
-        }
-
-        // Try characters from 'a' to 'z'
-        for (int c = 0; c < 26; c++) {
-
-            if (cnt[c] == 0) {
-                continue;
-            }
-
-            char ch = (char) ('a' + c);
-
-            left[pos] = ch;
-            cnt[c]--;
-
-            /*
-             * Check whether current prefix
-             * can still be >= target prefix.
-             */
-            boolean possible = true;
-
-            for (int i = 0; i <= pos; i++) {
-
-                if (left[i] < target.charAt(i)) {
-                    possible = false;
-                    break;
+        if (pos == -1)return ;
+        for (int i = n - 1; i >= 0; i--){
+            if (s.charAt(i) > s.charAt(pos)){
+                swap(s, i, pos);
+                for (int j = pos + 1, r = n - 1; j < r; j++, r--){
+                    swap(s, j, r);
                 }
 
-                if (left[i] > target.charAt(i)) {
-                    break;
-                }
+                break;
             }
-
-            if (possible) {
-
-                if (solve(
-                        left,
-                        pos + 1,
-                        cnt,
-                        target,
-                        middle,
-                        n)) {
-
-                    cnt[c]++;
-                    return true;
-                }
-            }
-
-            // Backtrack
-            cnt[c]++;
         }
-
-        return false;
-    }
-
-    private String buildPalindrome(
-            char[] left,
-            int middle,
-            int n) {
-
-        StringBuilder sb = new StringBuilder();
-
-        // Add left half
-        for (char ch : left) {
-            sb.append(ch);
-        }
-
-        // Add middle character
-        if (n % 2 == 1) {
-            sb.append((char) ('a' + middle));
-        }
-
-        // Add reverse of left half
-        for (int i = left.length - 1; i >= 0; i--) {
-            sb.append(left[i]);
-        }
-
-        return sb.toString();
     }
 }
